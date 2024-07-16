@@ -16,7 +16,8 @@ class PostSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "comments"
+            "comments",
+            "like_num"
         ]
 
 class PostListSerializer(serializers.ModelSerializer):
