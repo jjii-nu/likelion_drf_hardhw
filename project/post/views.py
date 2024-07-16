@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import viewsets, mixins
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny 
 from .permissions import IsOwnerOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
@@ -22,8 +22,13 @@ class PostViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action in ["update", "destroy", "partial_update"]:
-            return [IsAdminUser()]
-        return []
+            return [IsOwnerOrReadOnly()]
+        elif self.action in ["list", "retrieve"]:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
+    def perform_create(self, serializer):
+        serializer.save(writer=self.request.user)
     
     @action(methods=["GET"], detail=False)
     def recommend(self, request):
@@ -62,15 +67,21 @@ class CommentViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.
     serializer_class = CommentSerializer
 
     def get_permissions(self):
-        if self.aciton in ["update", "destroy", "partial_update"]:
+        if self.action in ["update", "destroy", "partial_update"]:
             return [IsOwnerOrReadOnly()]
-        return []
-
+        elif self.action in ["retrieve"]:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
 class PostCommentViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
     #queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        if self.action == "list":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
     def get_queryset(self):
         post = self.kwargs.get("post_id")
         queryset = Comment.objects.filter(post_id=post)
@@ -86,6 +97,6 @@ class PostCommentViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.
         post = get_object_or_404(Post, id=post_id)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(post=post)
+        serializer.save(post=post, writer=request.user)
         return Response(serializer.data)
     
