@@ -36,17 +36,22 @@ class PostViewSet(viewsets.ModelViewSet):
         ran_post_serializer = PostListSerializer(ran_post)
         return Response(ran_post_serializer.data)
     
-    @action(methods=["GET"], detail=True)
-    def test(self, request, pk=None):
-        test_post = self.get_object()
-        test_post.like_num += 1
-        test_post.save(update_fields=["like_num"])
+    @action(methods=['POST'], detail=True)
+    def likes(self, request, pk=None):
+        like_post = self.get_object()
+        if request.user in like_post.like.all():
+            like_post.like.remove(request.user)
+            like_post.likes_num -= 1
+        else:        
+            like_post.like.add(request.user)
+            like_post.likes_num += 1
+        like_post.save(update_fields=["likes_num"])
         return Response()
 
-    @action(methods=["GET"], detail=False)
-    def top_liked(self, request):
-        top_posts = Post.objects.order_by('-like_num')[:3]
-        top_posts_serializer = self.get_serializer(top_posts, many=True)
+    @action(methods=['GET'], detail=False)
+    def likesTop3(self, request):
+        top_posts = self.get_queryset().order_by("-likes_num")[:3]
+        top_posts_serializer = PostListSerializer(top_posts, many=True)
         return Response(top_posts_serializer.data)
 
     '''

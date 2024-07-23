@@ -12,7 +12,8 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     image = models.ImageField(upload_to=image_upload_path, blank=True, null=True)
-    like_num = models.PositiveSmallIntegerField(default=0)
+    like = models.ManyToManyField(User, related_name="likes", blank=True)
+    likes_num = models.PositiveSmallIntegerField(default=0)
 class Comment(models.Model):
     id = models.AutoField(primary_key=True)
     post = models.ForeignKey(Post, blank=False, null=False, on_delete=models.CASCADE, related_name='comments')
